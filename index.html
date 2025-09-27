@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpendLy</title>
+    <!-- Load Tailwind CSS for fast, responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+        /* --- Theme Variables --- */
+        :root {
+            --bg-body: #f7f7f7; /* Light Mode Body */
+            --bg-card: #ffffff; /* Light Mode Main Card */
+            --bg-panel: #F7FAFC; /* Light Mode Side Panels */
+            --text-primary: #1F2937; /* Gray 900 */
+            --text-secondary: #4B5563; /* Gray 600 */
+            --bg-accent: #6D28D9; /* Violet 700 */
+            --bg-accent-light: #EDE9FE; /* Violet 100 (Financial Status Card) */
+            --bg-input: #ffffff;
+            --text-input: #1F2937;
+        }
+
+        .dark-mode {
+            --bg-body: #0D1117; /* GitHub/Professional Dark Blue-Black */
+            --bg-card: #161B22; /* Slightly Lighter, Layered Main Card */
+            --bg-panel: #21262D; /* Medium Dark Panels */
+            --text-primary: #F0F6FC; /* Very light text for high contrast */
+            --text-secondary: #8B949E; /* Gray text for secondary info */
+            --bg-accent: #8B5CF6; /* Violet 400 - Brighter accent gradient */
+            --bg-accent-light: #4c376e; /* Darker accent card background */
+            --bg-input: #21262D; /* Same as panel for seamless inputs */
+            --text-input: #F0F6FC; /* Ensures text inside input is visible */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .vibe-card {
+            background-color: var(--bg-card);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Deeper shadow in dark mode */
+            transition: transform 0.3s ease, background-color 0.3s;
+        }
+        .vibe-card:hover {
+            transform: translateY(-5px);
+        }
+        /* Adjusted background for main panel */
+        .main-panel { 
+            background-color: var(--bg-panel); 
+            transition: background-color 0.3s;
+        } 
+        
+        .button-primary {
+            background-image: linear-gradient(to right, var(--bg-accent), #A78BFA); /* Violet gradient (consistent but darker base) */
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5);
+        }
+        .button-primary:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.7);
+        }
+        
+        /* Input and Select styling for dark mode compatibility */
+        input[type="number"], select {
+            background-color: var(--bg-input);
+            color: var(--text-input); /* Use the new input text variable */
+            border-color: var(--text-secondary); /* Ensure border is visible */
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        /* Set label color explicitly to ensure visibility */
+        /* Target headers and titles */
+        h1, h2, h3, .text-gray-900, .text-violet-900 {
+            color: var(--text-primary) !important;
+        }
+        
+        /* General secondary text/labels */
+        .text-gray-700, .text-gray-500, label {
+            color: var(--text-secondary) !important;
+        }
+        
+        /* Financial Status card background */
+        .financial-status-card {
+            background-color: var(--bg-accent-light);
+            transition: background-color 0.3s;
+        }
+        
+        /* Custom colors for categories (these are fixed colors for the progress bars/icons) */
+        .groceries { background-color: #10B981; } /* Emerald */
+        .rent { background-color: #FF5733; } /* Custom Orange-Red for Rent */
+        .utilities { background-color: #3B82F6; } /* Blue for Utilities (Gas/Electric) */
+        .transport { background-color: #FFC300; } /* Yellow for Transport */
+        .day-to-day { background-color: #FBBF24; } /* Amber */
+        .going-out { background-color: #EC4899; } /* Pink */
+        .entertainment { background-color: #8B5CF6; } /* Violet */
+        .savings { background-color: #00BFFF; } /* Deep Sky Blue */
+        .other { background-color: #6B7280; } /* Gray */
+
+        /* Enhanced Log Styling */
+        .log-item {
+            padding: 1rem;
+            border-radius: 0.75rem; /* rounded-lg */
+            background-color: var(--bg-card);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease, background-color 0.3s;
+            display: flex;
+            align-items: center;
+        }
+        .log-item:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+        .log-icon {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+        .log-meta {
+            font-size: 0.75rem; /* text-xs */
+            color: var(--text-secondary); 
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="w-full max-w-4xl rounded-3xl p-6 md:p-10 vibe-card">
+
+        <!-- Header -->
+        <header class="text-center mb-10 flex flex-col md:flex-row justify-between items-center">
+            <div class="md:text-left text-center flex-grow">
+                <h1 class="text-4xl font-black mb-1">SpendLy (₹)</h1>
+                <p class="text-lg text-gray-500">Log transactions and view your monthly spending breakdown instantly. Current Status: <span id="time" class="font-semibold text-violet-600">Loading...</span></p>
+            </div>
+             <!-- Theme Toggle Button -->
+            <button id="themeToggle" onclick="toggleTheme()" class="mt-4 md:mt-0 px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 transition-colors duration-300 shadow-md">
+                Switch to Dark Mode 🌙
+            </button>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Control Panel (Left Column) - Now only Transaction Logger -->
+            <div class="lg:col-span-1 p-6 rounded-2xl space-y-8 main-panel">
+                
+                <!-- 1. Budget Setter -->
+                <div>
+                    <h2 class="text-2xl font-bold mb-4 text-violet-700">Set Monthly Budget</h2>
+                    <div class="mb-3">
+                        <label for="budgetInput" class="block text-sm font-medium text-gray-700 mb-1">Your Target Budget (₹)</label>
+                        <input type="number" id="budgetInput" min="1000" placeholder="e.g. 45000" value="45000" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-violet-500 focus:border-violet-500 transition duration-150">
+                    </div>
+                    <button onclick="setNewBudget()" class="button-primary text-white font-semibold py-3 px-6 rounded-xl w-full">
+                        Update Budget
+                    </button>
+                </div>
+                
+                <!-- 2. Manual Transaction Logger -->
+                <div>
+                    <h2 class="text-2xl font-bold mb-4 text-violet-700">Log New Spending</h2>
+                    <div class="mb-3">
+                        <label for="transactionAmount" class="block text-sm font-medium text-gray-700 mb-1">Amount Spent (₹)</label>
+                        <input type="number" id="transactionAmount" min="1" placeholder="e.g. 450.50" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-violet-500 focus:border-violet-500 transition duration-150">
+                    </div>
+                    <div class="mb-5">
+                        <label for="transactionCategory" class="block text-sm font-medium text-gray-700 mb-1">Select Category</label>
+                        <select id="transactionCategory" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-violet-500 focus:border-violet-500 transition duration-150">
+                            <option value="Groceries">🛒 Groceries</option>
+                            <option value="Rent">🏡 Rent/Housing</option>
+                            <option value="Utilities">💡 Utilities (Electric/Gas/Water)</option>
+                            <option value="Transport">⛽ Transport/Fuel</option>
+                            <option value="DayToDay">☕ Day-to-Day Items</option>
+                            <option value="GoingOut">🎉 Going Out/Dining</option>
+                            <option value="Entertainment">🎬 Movie/Entertainment</option>
+                            <option value="Savings">💰 Savings/Investments</option>
+                            <option value="Other">❓ Other</option>
+                        </select>
+                    </div>
+                    <button onclick="logNewTransaction()" class="button-primary text-white font-semibold py-3 px-6 rounded-xl w-full">
+                        Log Transaction
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dashboard / Status (Right Columns) -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- Financial Health Summary -->
+                <div class="p-6 rounded-2xl financial-status-card">
+                    <h3 class="text-xl font-bold text-violet-800 mb-3">Your Financial Status</h3>
+                    <div class="grid grid-cols-2 gap-4 text-gray-700">
+                        <div>
+                            <p class="text-sm font-medium">Monthly Budget</p>
+                            <p class="text-2xl font-extrabold text-violet-900" id="currentBudgetDisplay">₹45,000</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium">Spent YTD</p>
+                            <p class="text-2xl font-extrabold text-red-500" id="spentAmount">₹0.00</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Category Breakdown -->
+                <div class="p-6 rounded-2xl main-panel">
+                    <h3 class="text-xl font-bold text-gray-700 mb-3">Category Breakdown This Month</h3>
+                    <div id="categoryBreakdown" class="space-y-4">
+                        <!-- Breakdown will be rendered here by JavaScript -->
+                        <p class="text-sm text-gray-500" id="initialMessage">Log your first expense to see the breakdown!</p>
+                    </div>
+                </div>
+
+                <!-- The Alert Log / Simulation History -->
+                <div class="p-6 rounded-2xl main-panel">
+                    <h3 class="text-xl font-bold text-gray-700 mb-3">Transaction Log</h3>
+                    <ul id="alertHistory" class="space-y-3 max-h-48 overflow-y-auto">
+                        <li class="p-3 rounded-lg text-sm text-gray-600 bg-gray-200 dark:bg-gray-700 dark:text-gray-300 transition-colors duration-300">
+                           👋 Remember to log your fixed bills (e.g., Rent, Utilities) first!
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // --- Core Application Logic ---
+
+        // State variables
+        let budget = 45000; 
+        
+        // Data structure to track spending by category 
+        let categorySpending = {
+            Groceries: 0,
+            Rent: 0, 
+            Utilities: 0,
+            Transport: 0,
+            DayToDay: 0,
+            GoingOut: 0,
+            Entertainment: 0,
+            Savings: 0,
+            Other: 0
+        };
+
+        // Initialize total spent (starts at 0)
+        let totalSpent = 0;
+        
+        // DOM element references
+        const spentEl = document.getElementById('spentAmount');
+        const historyEl = document.getElementById('alertHistory');
+        const timeEl = document.getElementById('time'); 
+        const amountInput = document.getElementById('transactionAmount');
+        const categorySelect = document.getElementById('transactionCategory');
+        const breakdownEl = document.getElementById('categoryBreakdown');
+        const budgetInput = document.getElementById('budgetInput');
+        const currentBudgetDisplayEl = document.getElementById('currentBudgetDisplay');
+        const themeToggleEl = document.getElementById('themeToggle');
+        
+        // Category color mapping for rendering
+        const categoryColors = {
+            Groceries: 'groceries',
+            Rent: 'rent',
+            Utilities: 'utilities',
+            Transport: 'transport',
+            DayToDay: 'day-to-day',
+            GoingOut: 'going-out',
+            Entertainment: 'entertainment',
+            Savings: 'savings',
+            Other: 'other'
+        };
+
+        /**
+         * Theme toggling function
+         */
+        function toggleTheme() {
+            const isDarkMode = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+            themeToggleEl.textContent = isDarkMode ? 'Switch to Light Mode ☀️' : 'Switch to Dark Mode 🌙';
+        }
+
+        /**
+         * Applies the saved theme preference on load.
+         */
+        function applySavedTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeToggleEl.textContent = 'Switch to Light Mode ☀️';
+            } else {
+                themeToggleEl.textContent = 'Switch to Dark Mode 🌙';
+            }
+        }
+
+        /**
+         * Allows the user to set a new monthly budget.
+         */
+        function setNewBudget() {
+            const newBudgetValue = parseFloat(budgetInput.value);
+            if (isNaN(newBudgetValue) || newBudgetValue <= 0) {
+                // Using console.error instead of alert as per instructions
+                console.error('ERROR: Please enter a valid budget amount (minimum ₹1000).');
+                // You might replace this with a temporary in-app message in a modal for production code
+                return;
+            }
+            budget = newBudgetValue;
+            currentBudgetDisplayEl.textContent = `₹${budget.toLocaleString('en-IN')}`;
+            updateSpendingDisplay(); 
+            
+            // Optional: Provide visual feedback for budget update
+            budgetInput.classList.add('border-green-500');
+            setTimeout(() => {
+                budgetInput.classList.remove('border-green-500');
+            }, 1000);
+        }
+        
+        /**
+         * Determines the current time of day for the header display.
+         */
+        function updateTime() {
+            const now = new Date();
+            const hour = now.getHours();
+            let timeText;
+            if (hour < 5) timeText = 'Late Night 🦉';
+            else if (hour < 12) timeText = 'Morning ☀️';
+            else if (hour < 18) timeText = 'Afternoon 🌤️';
+            else timeText = 'Evening 🌙';
+            
+            if (timeEl) { 
+                timeEl.textContent = timeText;
+            } else {
+                console.error("Error: 'time' element not found in the DOM.");
+            }
+        }
+
+        /**
+         * Logs a new transaction (manual input).
+         */
+        function logNewTransaction() {
+            
+            // --- 1. Get/Validate Inputs ---
+            let transactionAmount = parseFloat(amountInput.value);
+            let transactionCategory = categorySelect.value;
+            let logType = 'Transaction Logged';
+
+            if (isNaN(transactionAmount) || transactionAmount <= 0) {
+                console.error('ERROR: Please enter a valid spending amount.');
+                return;
+            }
+            
+            // --- 2. Update State ---
+            
+            // Savings amount is tracked as money out of the available budget.
+            totalSpent += transactionAmount;
+            
+            // Ensure category key is simple for tracking
+            let catKey = transactionCategory; 
+
+            if (categorySpending[catKey] === undefined) {
+                categorySpending[catKey] = 0;
+            }
+            categorySpending[catKey] += transactionAmount;
+
+
+            // --- 3. Update UI ---
+            updateSpendingDisplay();
+            renderCategoryBreakdown();
+            
+            // Log the transaction
+            logAlert(logType, transactionAmount, transactionCategory);
+
+            // Clear input for manual log
+            amountInput.value = '';
+            categorySelect.value = 'Groceries';
+        }
+
+        /**
+         * Updates the total spending amount and its color.
+         */
+        function updateSpendingDisplay() {
+            // Display amount with INR symbol
+            spentEl.textContent = `₹${totalSpent.toFixed(2)}`;
+            
+            // Color change for spent amount if over budget (visual flair)
+            spentEl.classList.remove('text-red-700', 'text-orange-500', 'text-red-500');
+
+            if (totalSpent > budget) {
+                spentEl.classList.add('text-red-700'); // Red when over budget
+            } else if (totalSpent > (budget * 0.8)) {
+                spentEl.classList.add('text-orange-500'); // Orange when nearing budget
+            } else {
+                 spentEl.classList.add('text-red-500'); // Default color (can be customized)
+            }
+        }
+
+        /**
+         * Renders the category breakdown using progress bars.
+         */
+        function renderCategoryBreakdown() {
+            const initialMessageEl = document.getElementById('initialMessage');
+            if (initialMessageEl) initialMessageEl.style.display = 'none';
+
+            breakdownEl.innerHTML = '';
+            
+            const totalLogged = Object.values(categorySpending).reduce((sum, current) => sum + current, 0);
+            
+            // Handle division by zero for an empty breakdown
+            if (totalLogged === 0) {
+                 breakdownEl.innerHTML = `<p class="text-sm text-gray-500">Log your first expense to see the breakdown!</p>`;
+                 return;
+            }
+
+            for (const [category, amount] of Object.entries(categorySpending)) {
+                if (amount > 0) {
+                    const percentage = (amount / totalLogged) * 100;
+                    const colorClass = categoryColors[category] || categoryColors['Other'];
+                    
+                    // Determine percentage width for the progress bar
+                    const progressBarWidth = percentage > 100 ? 100 : percentage;
+
+                    const itemHtml = `
+                        <div class="flex items-center space-x-3">
+                            <span class="w-1/3 text-sm font-semibold">${category}</span>
+                            <div class="w-2/3 bg-gray-300 rounded-full h-3">
+                                <div class="${colorClass} h-3 rounded-full transition-all duration-500" style="width: ${progressBarWidth.toFixed(1)}%"></div>
+                            </div>
+                            <span class="w-1/6 text-right text-sm font-bold text-gray-900 dark:text-gray-50">${percentage.toFixed(1)}%</span>
+                        </div>
+                    `;
+                    breakdownEl.innerHTML += itemHtml;
+                }
+            }
+        }
+
+
+        /**
+         * Adds a log entry to the history panel for transactions.
+         */
+        function logAlert(type, amount, category) {
+            const now = new Date();
+            // Format time as HH:MM
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            const li = document.createElement('li');
+            
+            const colorClass = categoryColors[category] || categoryColors['Other'];
+            
+            // Use the new log-item class for styling
+            li.className = `log-item`;
+            
+            // Enhanced inner HTML structure with icon and clear text
+            li.innerHTML = `
+                <!-- Color Indicator -->
+                <div class="log-icon ${colorClass}"></div>
+                
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-center">
+                        <!-- Category and Time -->
+                        <span class="text-base font-medium text-gray-800 dark:text-gray-100">${category}</span>
+                        <span class="log-meta">${timeString}</span>
+                    </div>
+                    <!-- Amount and Type -->
+                    <p class="text-sm text-gray-600 dark:text-gray-300 truncate">
+                        ${type}: <span class="text-lg font-extrabold text-violet-700">₹${amount.toFixed(2)}</span>
+                    </p>
+                </div>
+            `;
+            
+            historyEl.prepend(li);
+            // Limit history to 5 entries for clean UI
+            while (historyEl.children.length > 5) {
+                historyEl.removeChild(historyEl.lastChild);
+            }
+        }
+        
+        // Initialize the app on load
+        window.onload = () => {
+            applySavedTheme();
+            updateTime();
+            // Set up a periodic update for the time display
+            setInterval(updateTime, 60000); 
+            
+            // Initial UI update
+            updateSpendingDisplay();
+            renderCategoryBreakdown(); 
+            
+            // Set initial budget display
+            currentBudgetDisplayEl.textContent = `₹${budget.toLocaleString('en-IN')}`;
+            budgetInput.value = budget;
+        };
+        
+    </script>
+</body>
+</html>
